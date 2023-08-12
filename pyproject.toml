@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "python-better-life"
+version = "0.1.0"
+description = ""
+authors = ["jihye <ghe.lee19@gmail.com>"]
+readme = "README.md"
+packages = [{include = "python_better_life"}]
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+python-dotenv = "^1.0.0"
+requests = "^2.31.0"
+python-telegram-bot = "^20.4"
+asyncio = "^3.4.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
