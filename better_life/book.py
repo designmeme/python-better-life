@@ -5,6 +5,7 @@ import traceback
 
 import asyncio
 import dotenv
+import pandas as pd
 import requests
 
 import telegrambot
@@ -34,30 +35,37 @@ def notify_new_book_by_keyword(keyword: str):
         params = {
             "query": keyword,
             "sort": "date",
+            "display": 20,
         }
         logger.debug(f"신간 검색 요청. {keyword=!r}")
         res = requests.get(url, headers=headers, params=params)
         res.raise_for_status()
 
         books = res.json()["items"]
-        logger.debug(f"검색 결과: {len(books)}개")
+        books = pd.DataFrame(books)
+        books['pubdate'] = pd.to_datetime(books['pubdate'])
+        logger.debug(f"검색 결과: {len(books)}개.\n{books[['pubdate', 'title']]}")
 
-        new_books = []
-        today = datetime.date.today()
-        for book in books:
-            pubdate = datetime.date.fromisoformat(book["pubdate"])
-            diff = today - pubdate
-            if diff.days == 1:  # 어제 출간된 도서만
-                new_books.append(book)
+        today = datetime.datetime.fromisoformat(datetime.date.today().isoformat())
+
+        # 어제 이후 출간된 도서만
+        new_books = books[books['pubdate'] >= today - datetime.timedelta(days=1)]
 
         # 신간 도서가 있다면 메세지를 발송한다.
         logger.debug(f"신간 검색 결과: {len(new_books)}개")
 
-        if new_books:
+        if len(new_books) > 0:
             text = [f"*신간 알림* - 검색어 \"{keyword}\""]
-            text += [f"- [{b['title']}]({b['link']}) | 발행일 {b['pubdate']}" for b in new_books]
-            text = "\n".join(text)
-            asyncio.run(telegrambot.send_message(text, "Markdown"))
+            for i, b in new_books.iterrows():
+                text.append(f"{i + 1}. {b['pubdate'].strftime('%Y-%m-%d')} [{b['title']}]({b['link']})")
+        else:
+            text = [f"*신간 알림* - 검색어 \"{keyword}\""]
+            text += [f"- 없음"]
+
+        text = "\n".join(text)
+        # logger.debug(text)
+        asyncio.run(telegrambot.send_message(text, "Markdown"))
+
     except Exception as e:
         logger.error(traceback.format_exception())
         text = f"신간 알림 코드 실행 중 오류가 발생했어요. {e}"
