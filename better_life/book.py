@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 dotenv.load_dotenv()
 
 
-def notify_new_book_by_keyword(keyword: str):
+def notify_new_book_by_keyword(keyword: str, file: str):
     """신간 알림
     키워드로 검색한 결과에 신간 도서가 있다면 텔레그램 메세지로 알려준다.
     메세지로 보낸 도서는 .cache/book.csv 파일에 저장되며 다음 알림에서 제외된다.
@@ -55,10 +55,11 @@ def notify_new_book_by_keyword(keyword: str):
         new_books = books[books['pubdate'] >= today - datetime.timedelta(days=1)]
 
         # 이미 발송한 도서
-        if not os.path.isdir("../.cache"):
-            os.makedirs("../.cache")
+        directory = os.path.dirname(os.path.abspath(file))
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
         try:
-            old_books = pd.read_csv("../.cache/books.csv", index_col="isbn", dtype={"isbn": str},
+            old_books = pd.read_csv(file, index_col="isbn", dtype={"isbn": str},
                                     parse_dates=["pubdate"])
             # 이미 발송한 도서 제외
             new_books = new_books[~new_books.index.isin(old_books.index.tolist())]
@@ -75,7 +76,7 @@ def notify_new_book_by_keyword(keyword: str):
 
             # 메세지 발송 책을 캐시 파일로 저장한다. (description 내용이 길어서 삭제함)
             cache_books = pd.concat([new_books, old_books]) if old_books is not None else new_books
-            cache_books.drop("description", axis=1).to_csv("../.cache/books.csv", date_format="%Y-%m-%d")
+            cache_books.drop("description", axis=1).to_csv(file, date_format="%Y-%m-%d")
         else:
             pass
             # text = [f"*신간 알림* - 검색어 \"{keyword}\""]
@@ -94,7 +95,8 @@ def notify_new_book_by_keyword(keyword: str):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     keywords = os.environ.get("NEW_BOOK_KEYWORDS")
+    file = os.environ.get("BOOK_CACHE_FILE")
     logger.debug(f"신간 알림 키워드: {keywords!r}")
     keywords = keywords.split(",")
     for k in keywords:
-        notify_new_book_by_keyword(k)
+        notify_new_book_by_keyword(k, file)
