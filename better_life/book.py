@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import re
 import traceback
 
 import asyncio
@@ -69,15 +70,16 @@ def notify_new_book_by_keyword(keyword: str):
 
         if len(new_books) > 0:
             text = [f"*신간 알림* - 검색어 \"{keyword}\""]
-            for i, b in new_books.iterrows():
-                text.append(f"* {b['pubdate'].strftime('%Y-%m-%d')} [{b['title']}]({b['link']})")
+            for i, (isbn, b) in enumerate(new_books.iterrows()):
+                text.append(f"{i + 1}. {b['pubdate'].strftime('%Y-%m-%d')} [{re.escape(b['title'])}]({b['link']})")
 
             # 메세지 발송 책을 캐시 파일로 저장한다. (description 내용이 길어서 삭제함)
             cache_books = pd.concat([new_books, old_books]) if old_books is not None else new_books
             cache_books.drop("description", axis=1).to_csv("../.cache/books.csv", date_format="%Y-%m-%d")
         else:
-            text = [f"*신간 알림* - 검색어 \"{keyword}\""]
-            text += [f"- 없음"]
+            pass
+            # text = [f"*신간 알림* - 검색어 \"{keyword}\""]
+            # text += [f"- 없음"]
 
         text = "\n".join(text)
         # logger.debug(text)
