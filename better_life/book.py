@@ -1,7 +1,6 @@
 import datetime
 import logging
 import os
-import re
 import traceback
 
 import asyncio
@@ -13,6 +12,9 @@ import telegrambot
 
 logger = logging.getLogger(__name__)
 dotenv.load_dotenv()
+
+
+_pattern = {i: '\\' + chr(i) for i in b'()[]{}?*+-|^$\\.&~#'}
 
 
 def notify_new_book_by_keyword(keyword: str, file: str):
@@ -72,7 +74,7 @@ def notify_new_book_by_keyword(keyword: str, file: str):
         if len(new_books) > 0:
             text = [f"*신간 알림* - 검색어 \"{keyword}\""]
             for i, (isbn, b) in enumerate(new_books.iterrows()):
-                text.append(f"{i + 1}. {b['pubdate'].strftime('%Y-%m-%d')} [{re.escape(b['title'])}]({b['link']})")
+                text.append(f"{i + 1}. {b['pubdate'].strftime('%Y-%m-%d')} [{b['title'].translate(_pattern)}]({b['link']})")
 
             # 메세지 발송 책을 캐시 파일로 저장한다. (description 내용이 길어서 삭제함)
             cache_books = pd.concat([new_books, old_books]) if old_books is not None else new_books
