@@ -82,7 +82,7 @@ def notify_new_book_by_keyword(keyword: str, file: str):
 
             # 메세지 발송 책을 캐시 파일로 저장한다.
             cache_books = pd.concat([new_books, old_books]) if old_books is not None else new_books
-            cache_books = cache_books.sort_values('pubdate', ascending=False)
+            cache_books = cache_books.sort_values(['pubdate', 'isbn'], ascending=[False, True])
             cache_books = cache_books.head(50)  # 최신 데이터만 저장한다.
             cache_books.to_csv(file, date_format="%Y-%m-%d")
 
